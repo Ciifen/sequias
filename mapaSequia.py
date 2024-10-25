@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import numpy as np
 import rasterio
 import matplotlib as mpl
@@ -16,13 +18,37 @@ from rasterio.plot import show
 import rasterio.features
 from shapely.geometry import box
 import gdal
+import locale
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+import os
 
-nombre_a= "2023_12_01"
+# Establecer el idioma portugu�s para los nombres de los meses en brasile�o
+locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+
+# Obtener la fecha actual
+fecha_actual = datetime.now()
+
+# Calcular el mes anterior
+primer_dia_mes_actual = fecha_actual.replace(day=1)
+#mes_anterior = primer_dia_mes_actual  - relativedelta(months=1)
+mes_anterior = primer_dia_mes_actual - timedelta(days=1)
+# Convertir el mes anterior al formato requerido
+nombre_a = mes_anterior.strftime("%Y_%m_01")  # Formato: a�o_mes_d�a (d�a fijo en 01)
+
+# Formato brasile�o para los meses
+mes_en_brasileno = mes_anterior.strftime("%B").lower()  # Nombre del mes en min�sculas
+
+# Crear los valores din�micos para los archivos
+raster_path2 = f"{mes_en_brasileno}{mes_anterior.strftime('%Y')}.tif"
+shapefile = f"/var/py/volunclima/monitor/{mes_en_brasileno}{mes_anterior.strftime('%Y')}/{mes_en_brasileno}{mes_anterior.strftime('%y')}.shp"
+
+
+namePng="MON-SEQ_01.jpeg" 
 periodo="1 mes"
-raster_path = nombre_a+".tif"
-raster_path2 = "dezembro2023.tif"
+raster_path = "/var/sequia_reg/REG/tif/"+nombre_a+".tif"
 
-shapefile = "/var/py/volunclima/monitor/dezembro2023/dezembro23.shp"
+#/var/sequia_reg/REG/tif
 
 def shp_to_geotiff(input_shp, output_geotiff):
     # Registrar los formatos de datos
@@ -211,12 +237,17 @@ custom_lines = [
 			mpl.lines.Line2D([0], [0], color=lstColors[2], lw=5),
 			mpl.lines.Line2D([0], [0], color=lstColors[1], lw=5),
 			mpl.lines.Line2D([0], [0], color=lstColors[0], lw=5)]
-plt.legend(bbox_to_anchor=(1,1), loc="upper left",handles=custom_lines, labels=lstIntervalsLbls,title="   Intensidad de sequía   ",title_fontsize='large',fontsize='medium')
+#plt.legend(bbox_to_anchor=(1,1), loc="upper left",handles=custom_lines, labels=lstIntervalsLbls,title="   Intensidad de sequía   ",title_fontsize='large',fontsize='medium')
 
 plt.title("\nMonitor de sequía Sudamérica: "+periodo+"\n Periodo: "+nombre_a)
 plt.draw()
-namePng = "osa_"+nombre_a+".png"
 fig.savefig("auxiliard.png",format='png',dpi=120)
 plt.close()
 subprocess.call(["/usr/local/bin/convert","auxiliard.png","-trim",namePng])
-subprocess.call(["cp",namePng,"/var/py/volunclima/monitor"])
+subprocess.call(["cp",namePng,"/var/py/volunclima/monitor/salidas"])
+if os.path.exists("auxiliard.png"):
+    os.remove("auxiliard.png")
+if os.path.exists("output.tif"):
+    os.remove("output.tif")
+if os.path.exists(raster_path2):
+    os.remove(raster_path2)
